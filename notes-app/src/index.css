@@ -1,0 +1,77 @@
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+:root {
+  --bg-primary: #fff5f7;
+  --bg-secondary: #ffe4ee;
+  --bg-tertiary: #ffd6e3;
+  --bg-hover: #ffc9d9;
+  --bg-active: #fbb6ce;
+  --text-primary: #4a2145;
+  --text-secondary: #8b4a6b;
+  --text-muted: #c0859e;
+  --accent: #ec4899;
+  --accent-hover: #db2777;
+  --accent-soft: #f9a8d4;
+  --danger: #e11d48;
+  --danger-hover: #be123c;
+  --border: #f8c8d6;
+  --tag-bg: #fce7f3;
+  --tag-text: #be185d;
+  --scrollbar-thumb: #f0a5c2;
+  --scrollbar-track: #fff5f7;
+  --modal-bg: rgba(165, 42, 92, 0.35);
+  --shadow: 0 4px 20px rgba(236, 72, 153, 0.15);
+  --shadow-strong: 0 8px 32px rgba(236, 72, 153, 0.25);
+  --gradient-header: linear-gradient(135deg, #fbcfe8, #f9a8d4);
+  --gradient-btn: linear-gradient(135deg, #ec4899, #f472b6);
+  --gradient-bg: radial-gradient(circle at 20% 10%, #ffe4f1 0%, transparent 40%),
+                 radial-gradient(circle at 80% 90%, #fce7f3 0%, transparent 45%),
+                 radial-gradient(circle at 90% 20%, #ffd6e8 0%, transparent 35%);
+}
+
+body {
+  font-family: 'Segoe UI', 'Poppins', -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Arial, sans-serif;
+  background: var(--bg-primary);
+  background-image: var(--gradient-bg);
+  color: var(--text-primary);
+  height: 100vh;
+  overflow: hidden;
+}
+
+#root {
+  height: 100vh;
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+}
+::-webkit-scrollbar-track {
+  background: var(--scrollbar-track);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--scrollbar-thumb);
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--accent-soft);
+}
+
+input, textarea, button {
+  font-family: inherit;
+}
+
+button {
+  cursor: pointer;
+  border: none;
+  background: none;
+  color: inherit;
+}
+
+::selection {
+  background: var(--accent-soft);
+  color: var(--text-primary);
+}

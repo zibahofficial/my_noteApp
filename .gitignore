@@ -1,0 +1,29 @@
+# Environment / secrets
+.env
+.env.*
+
+# Backend environment (keep secrets out of the repo)
+backend/.env
+
+# Logs
+*.log
+backend/backend.log
+backend/backend_err.log
+backend/startup_test.log
+notes-app/vite-dev.log
+
+# Node
+node_modules/
+dist/
+notes-app/dist/
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+
+# Editor / OS
+.DS_Store
+.vscode/
+.idea/
