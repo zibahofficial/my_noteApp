@@ -26,4 +26,6 @@ __pycache__/
 # Editor / OS
 .DS_Store
 .vscode/
-.idea/
+.idea/.env
+__pycache__/
+*.pyc
