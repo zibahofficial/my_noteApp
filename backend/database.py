@@ -6,7 +6,18 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://postgres:postgres@localhost:5432/notes_app")
+# VERCEL FIX: Use Postgres if provided, otherwise use SQLite in /tmp
+DATABASE_URL = os.getenv("DATABASE_URL", "")
+if not DATABASE_URL:
+    # Local dev -> postgres, Vercel -> sqlite in /tmp
+    if os.getenv("VERCEL"):
+        DATABASE_URL = "sqlite:////tmp/notes.db"
+    else:
+        DATABASE_URL = "postgresql://postgres:postgres@localhost:5432/notes_app"
+
+# Fix for Vercel Postgres (they give postgres:// but sqlalchemy needs postgresql://)
+if DATABASE_URL.startswith("postgres://"):
+    DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
 
 logger = logging.getLogger("notes-db")
 
@@ -21,14 +32,11 @@ note_tags = Table(
 
 class User(Base):
     __tablename__ = "users"
-
     id = Column(String(36), primary_key=True)
     username = Column(String(50), unique=True, nullable=False, index=True)
     hashed_password = Column(String(255), nullable=False)
     created_at = Column(DateTime, server_default=func.now(), nullable=False)
-
     notes = relationship("Note", back_populates="owner", cascade="all, delete-orphan")
-
     def to_dict(self):
         return {
             "id": self.id,
@@ -38,14 +46,12 @@ class User(Base):
 
 class Note(Base):
     __tablename__ = "notes"
-
     id = Column(String(36), primary_key=True)
     title = Column(String(200), nullable=False, default="Untitled Note")
     content = Column(Text, nullable=False, default="")
     user_id = Column(String(36), ForeignKey("users.id", ondelete="CASCADE"), nullable=True, index=True)
     created_at = Column(DateTime, server_default=func.now(), nullable=False)
     updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now(), nullable=False)
-
     owner = relationship("User", back_populates="notes")
     tags = relationship(
         "Tag",
@@ -54,7 +60,6 @@ class Note(Base):
         primaryjoin="Note.id == note_tags.c.note_id",
         secondaryjoin="note_tags.c.tag == Tag.name",
     )
-
     def to_dict(self):
         return {
             "id": self.id,
@@ -67,7 +72,6 @@ class Note(Base):
 
 class Tag(Base):
     __tablename__ = "tags"
-
     name = Column(String(50), primary_key=True)
     notes = relationship(
         "Note",
@@ -78,9 +82,10 @@ class Tag(Base):
     )
 
 def get_engine():
-    engine = create_engine(DATABASE_URL, pool_pre_ping=True)
-    with engine.connect():
-        pass
+    connect_args = {}
+    if DATABASE_URL.startswith("sqlite"):
+        connect_args = {"check_same_thread": False}
+    engine = create_engine(DATABASE_URL, pool_pre_ping=True, connect_args=connect_args)
     return engine
 
 engine = get_engine()
@@ -88,24 +93,28 @@ SessionLocal = sessionmaker(bind=engine)
 
 def init_db():
     Base.metadata.create_all(engine)
-    migrate_existing_notes()
+    # Only run postgres migration if we are on postgres
+    if not DATABASE_URL.startswith("sqlite"):
+        migrate_existing_notes()
 
 def migrate_existing_notes():
-    with engine.begin() as conn:
-        exists = conn.execute(text(
-            "SELECT column_name FROM information_schema.columns "
-            "WHERE table_name = 'notes' AND column_name = 'user_id'"
-        )).fetchone()
-        if not exists:
-            logger.info("Adding user_id column to notes table...")
-            conn.execute(text(
-                "ALTER TABLE notes ADD COLUMN user_id VARCHAR(36) "
-                "REFERENCES users(id) ON DELETE CASCADE"
-            ))
-            conn.execute(text(
-                "CREATE INDEX IF NOT EXISTS ix_notes_user_id ON notes(user_id)"
-            ))
-            logger.info("user_id column added to notes table.")
+    try:
+        with engine.begin() as conn:
+            exists = conn.execute(text(
+                "SELECT column_name FROM information_schema.columns "
+                "WHERE table_name = 'notes' AND column_name = 'user_id'"
+            )).fetchone()
+            if not exists:
+                logger.info("Adding user_id column to notes table...")
+                conn.execute(text(
+                    "ALTER TABLE notes ADD COLUMN user_id VARCHAR(36) "
+                    "REFERENCES users(id) ON DELETE CASCADE"
+                ))
+                conn.execute(text(
+                    "CREATE INDEX IF NOT EXISTS ix_notes_user_id ON notes(user_id)"
+                ))
+    except Exception as e:
+        logger.warning(f"Migration skipped: {e}")
 
 def get_db():
     db = SessionLocal()
